@@ -1,0 +1,163 @@
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  padding-bottom: 20px;
+  padding-top: 80px;
+}
+
+h1, h2 {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, Verdana, sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 45px !important;
+  margin-left: -3px;
+  margin-bottom: 0px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  /*color: rgba(0,0,50,1);*/
+  color: rgba(0,0,0,0.8);
+}
+
+#author {
+  text-align: center;
+  font-style: italic;
+  font-size: 15px;
+  margin-top: 100px;
+  margin-bottom: 100px;
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, Verdana, sans-serif;
+  padding-top: 50px;
+  border-top: 1px solid #bbb;
+}
+
+.content {
+  width: 710px;
+  margin: auto;
+  padding-left: 10px;
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+  letter-spacing: 0.01rem;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 22px;
+  line-height: 1.5;
+  background-color: #fff;
+}
+
+.content > p {
+  margin-left: 30px;
+}
+
+.quote {
+  font-size: 18px;
+  padding-left: 20px;
+  padding-right: 20px;
+  /*margin-left: 33px;*/
+  margin-left: 6px;
+  /*margin-right: 83px;*/
+  margin-right: -14px;
+  border-left: 5px solid rgba(0,0,0,0.1);
+  border-right: 5px solid rgba(0,0,0,0.1);
+}
+
+.img {
+  text-align: center;
+}
+
+.code {
+  width: 880px;
+  padding-left: 80px;
+  font-size: 15px;
+  margin: auto;
+}
+
+#training, #trainingRes {
+  border: 1px solid #000;
+}
+
+#transition {
+  margin-bottom: 40px;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.filters {
+  margin-left: 20px;
+}
+
+.filters > canvas {
+  margin-right: 5px;
+  border: solid 1px #eee;
+}
+
+#diff-result > canvas {
+  border: solid 1px #eee;
+}
+
+.symbol {
+  position: relative;
+  bottom: 90px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.p {
+  margin-bottom: -4px;
+  margin-right: 5px;
+  margin-left: 5px;
+  width: 20px;
+  height: 20px;
+  border: solid 1px #eee;
+}
+
+.net-period > canvas {
+  width: 65px;
+  height: 65px;
+}
+
+.net-period > .symbol {
+  bottom: 30px;
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+.end-demo {
+  width: 230px;
+  height: 230px;
+  margin-left: 30px;
+  margin-right: 30px;
+  border: solid #555 2px;
+}
+
+.end-demo-p {
+  padding-top: 30px;
+  padding-left: 45px;
+}
+
+.kernel-demo {
+  padding-left: 170px;
+}
+
+.kernel-demo > canvas {
+  width: 130px;
+  height: 130px;
+  border: 1px solid #000;
+}
+
+.kernel-demo > .symbol {
+  bottom: 55px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.gol-rule {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  bottom: -5px;
+  margin-left: 6px;
+  margin-right: 3px;
+  background-color: #fff;
+  border: 1px #000 solid;
+}

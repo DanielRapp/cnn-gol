@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+    });
+    </script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="pure-min.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Learning Game of Life with a Convolutional Neural Network</h1>
+      <p>
+        In Greg Egan's wonderful short story "<i><a href="http://www.f.waseda.jp/sidoli/Egan_Learning_To_Be_Me.pdf">Learning to Be Me</a></i>",
+        a neural implant, called a "jewel", is inserted into the brain at birth. The jewel monitors activity in order to learn how to mimic the behavior of the brain. From the introduction
+      </p>
+      <div class="quote">
+        <p>
+          I was six years old when my parents told me that there was a small, dark jewel inside my skull, learning to be me.
+        </p>
+        <p>
+          Microscopic spiders had woven a fine golden web through my brain, so that the jewel's teacher could listen to the whisper of my thoughts. The jewel itself eavesdropped on my senses, and read the chemical messages carried in my bloodstream; it saw, heard, smelt, tasted and felt the world exactly as I did, while the teacher monitored its thoughts and compared them with my own. Whenever the jewel's thoughts were wrong, the teacher - faster than thought - rebuilt the jewel slightly, altering it this way and that, seeking out the changes that would make its thoughts correct.
+        </p>
+        <p>
+        Why? So that when I could no longer be me, the jewel could do it for me.
+        </p>
+      </div>
+      <p>
+        In this article I'd like to discuss
+        a way of building this kind of <i>jewel</i>,
+        as a convolutional neural network,
+        which, after having <i>seen</i> a bunch of iterations of game of life,
+        can <i>learn</i> its underlying behaviour.
+      </p>
+
+      <h2>Game of life as convolution</h2>
+      <p>
+        I'll assume you already know
+        what game of life is. You have a grid
+        of cells, black cells are considered
+        <i>dead</i>, white
+        cells are considered <i>alive</i>, and there are
+        a few rules for updating the grid which are
+        inspired by biological processes.
+        For instance, <i>if a dead cell has exactly
+        three live cells in its $3\times 3$ neighbourhood
+        then it's born</i>.
+      </p>
+      <p>
+        <canvas id="gol-demo" width="650" height="200"></canvas>
+      </p>
+      <p>
+        A <i>convolutional filter</i> is an operation, together
+        with a <i>kernel</i> (a small, e.g. $3\times 3$,
+        matrix of weights), which transforms an image
+        (let's restrict ourselves to grayscale, but
+        it could also be extended to color)
+        by mapping the intensity of each pixel in the image
+        to a weighted sum of the intensities of its neighbours,
+        where the weights are determined by the kernel.
+
+        So for instance, the kernel
+        $$ B= \begin{bmatrix}
+          \frac{1}{9} & \frac{1}{9} & \frac{1}{9} \\
+          \frac{1}{9}  & \frac{1}{9} & \frac{1}{9} \\
+          \frac{1}{9} & \frac{1}{9} & \frac{1}{9}
+        \end{bmatrix}$$
+        results in a <i>smudgning</i>, or <i>blurring</i>, of the image
+        (since you're taking each pixel
+        and blending it with its closest neighbours).
+      </p>
+      <p class="kernel-demo">
+        <canvas id="kernel-pre"></canvas><span class="symbol">$\xrightarrow{\text{B}}$</span><canvas id="kernel-post"></canvas>
+      </p>
+      <p>
+        Now notice the connection between an updating rule
+        in game of life, and a convolutional filter.
+        Don't see it?
+        Well, think about it like this; each <i>rule</i>
+        can be represented by the set of neighbourhood
+        combinations that are satisfied by it.
+        So, for instance, the
+        neighbourhoods which satisfy the rule above
+        are $K_1=$<canvas id="k1" class="gol-rule"></canvas>, $K_2=$<canvas id="k2" class="gol-rule"></canvas>, $K_3=$<canvas id="k3" class="gol-rule"></canvas>, $\cdots$.
+        The grid of cells activated by this rule
+        could now be expressed as
+        $$G_1(A)=\mathbb{1}_{\ge 1}(A*K_1+\cdots+A*K_n)$$where $A*K$ denotes
+        the convolutional filtering of $A$ with $K$, and $\mathbb{1}_{\ge 1}(x)$ spits out $1$ if $x \ge 1$, and $0$ otherwise.
+      </p>
+      <p>
+        Finally we could also express the rest of the rules,
+        and their combination, in a similar style,
+        to get a full formula purely as a function of convolutional
+        filters. I won't dwell on the precise expression[1] though.
+        Instead we'll just use this fact as <i>inspiration</i>
+        for the architecture of the neural network that follows,
+        and trust (hope) that the network will be able to find it for us.
+      <p>
+      [1] You can read more about this <a href="http://danielrapp.github.io/morph/">here</a>. Think of <i>erosion</i> as just a thresholded convolution.
+      </p>
+      <h2>Building the jewel</h2>
+      <p>
+        We've see that game of life can be expressed
+        as a function of a bunch of convolutional filters.
+      </p>
+      <p>
+        Thinking of game of life as a biological
+        process, how could we now go about building its jewel?
+        How could we build a neural network which, given
+        a series of game of life frames, can learn
+        its behaviour?
+      </p>
+      <p>
+        The architecture is simple, and is directly inspired
+        by the above discussion.
+        The input is a grid with black and white pixels,
+        and the output should be the the next iteration
+        according to the rules of game of life.
+      </p>
+      <p class="img">
+        <img src="img/architecture.svg" width="500" />
+      </p>
+      <p>
+        I chose a two-layered approach.
+        The first layer is a convolutional layer, hooking each
+        $3\times 3$ neighbourhood to a set of filters
+        (arbitrarily fixed to 20) with a rectified linear activation function[2].
+        The idea being that this layer should <i>learn
+        the rules</i> for game of life. And it should encode
+        those rules in the weights of the filters.
+      </p>
+      <p>
+        The second layer should learn the appropriate
+        combination of these rules, and so it
+        consists
+        of just a (weighted) linear combination
+        of all the filters, which is then
+        mapped to the output. The whole thing is implemented
+        in <a href="https://github.com/karpathy/convnetjs">convnetjs</a>
+        with essentially just the following code
+      </p>
+    </div>
+    <div class="code">
+      <pre><code class="javascript">
+  var layer_defs = [], imgWidth = 9, imgHeight = 9;
+  layer_defs.push({ type: 'input', out_sx: imgWidth, out_sy: imgHeight, out_depth: 1 });
+  layer_defs.push({ type: 'conv', sx: 3, filters: 20, activation: 'relu', stride: 1, pad: 1 });
+  layer_defs.push({ type: 'regression', num_neurons: imgWidth*imgHeight });
+      </code></pre>
+    </div>
+    <div class="content">
+      <p>
+        Let's see it in action!
+      </p>
+      <p>
+        <canvas id="training" width="200" height="200"></canvas>
+        <img src="img/transition.svg" id="transition" width="200" />
+        <canvas id="training-res" width="200" height="200"></canvas>
+      </p>
+      <p>
+        On the left are a bunch of training examples
+        fed into the network, and on the right is the
+        output of the network.
+        After each new training point, just like in
+        Egan's story, the internal
+        representation (shown below) is modified slightly to get
+        closer and closer to the correct behaviour.
+        Here are filters that make up its internals:
+      </p>
+      <p>
+        <div id="filters-div" class="filters"></div>
+      </p>
+      <p>
+        If you wait for some time you'll see that
+        the difference between the desired output (the next game of life iteration)
+        and the network output slowly decrease
+        as we pump in more and more data
+      </p>
+      <p id="diff-result">
+        <canvas id="training-desired-output" width="200" height="200"></canvas>
+        <span class="symbol">$-$</span>
+        <canvas id="training-res-2" width="200" height="200"></canvas>
+        <span class="symbol">$=$</span>
+        <canvas id="training-diff" width="200" height="200"></canvas>
+      </p>
+      <p>
+        [2] There are already plenty of excellent
+        texts explaining the concepts and lingo
+        for these kinds of networks, so I won't
+        add to the noise (I recommend consulting
+        <a href="http://neuralnetworksanddeeplearning.com/chap1.html">Nielsen</a>,
+        <a href="http://www.iro.umontreal.ca/~bengioy/dlbook/">Bengio</a> or <a href="https://www.coursera.org/course/neuralnets">Hinton</a>).
+      </p>
+
+
+      <h2>Turning on the jewel</h2>
+      <p>
+        Let the network simmer the stove for a few minutes, and eventually you'll
+        get a network with filters tuned to something like this (pre-trained with a couple
+        million training examples):
+      </p>
+      <p>
+        <div id="filters-pretrained-div" class="filters"></div>
+      </p>
+      <p>
+        Let's plug in some well known patterns to see how well it fares.
+        <br/>Two interesting creatures of period two are <canvas id="p11" class="p"></canvas>$\to$<canvas id="p12" class="p"></canvas>$\to$<canvas id="p13" class="p"></canvas>and<br/><canvas id="p21" class="p"></canvas>$\to$<canvas id="p22" class="p"></canvas>$\to$<canvas id="p23" class="p"></canvas>.
+        And indeed, if we plug in one of these into the network/jewel (and threshold), we get the correct behaviour.
+        First the "blinker":
+      </p>
+      <p class="net-period">
+        <canvas id="blinker"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="blinker-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="blinker-threshold-1"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="blinker-thres-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="blinker-thres-res-thres"></canvas>
+      </p>
+      <p>
+        And the "toad":
+      </p>
+      <p>
+      <p class="net-period">
+        <canvas id="toad"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="toad-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="toad-threshold-1"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="toad-thres-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="toad-thres-res-thres"></canvas>
+      </p>
+      <p>
+        You rarely get perfect accuracy in machine learning, and indeed, even
+        here there are cases where it fails. The classic "glider",<br/><canvas id="g1" class="p"></canvas>$\to$<canvas id="g2" class="p"></canvas>$\to$<canvas id="g3" class="p"></canvas>$\to$<canvas id="g4" class="p"></canvas>$\to$<canvas id="g5" class="p"></canvas>, works well for the first two iterations
+      </p>
+      <p class="net-period">
+        <canvas id="glider"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="glider-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="glider-threshold-1"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="glider-thres-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="glider-thres-res-thres"></canvas>
+      </p>
+      <p>
+        But unfortunately it diverges by one pixel in the iteration that follow
+      </p>
+      <p class="net-period">
+        <canvas id="glider-2"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="glider-2-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="glider-2-threshold-1"></canvas><span class="symbol"><img src="img/arrow2.svg" width="50" /></span><canvas id="glider-2-thres-res"></canvas><span class="symbol">$\xrightarrow{\text{threshold}}$</span><canvas id="glider-2-thres-res-thres"></canvas>
+      </p>
+      <p>
+        I leave you with two animations. One is game of life, the other is the jewel. Can you tell which one is which? (You'll have to check out <a href="https://github.com/DanielRapp/cnn-gol">the code</a> to get the answer.)
+      </p>
+      <p class="end-demo-p">
+        <canvas id="the-jewel" class="end-demo"></canvas><canvas id="real-gol" class="end-demo"></canvas>
+      </p>
+
+      <div id="author">
+        Written by <a href="https://github.com/DanielRapp">Daniel Rapp</a>.
+        Check out the code for this <a href="https://github.com/DanielRapp/cnn-gol">on Github</a>.
+      </div>
+    </div>
+
+    </div>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="convnet-min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
