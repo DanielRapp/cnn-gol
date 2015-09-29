@@ -455,14 +455,6 @@
       runSimulation(jewelEndDemo, realEndDemo, net, imgWidth, imgHeight);
     });
 
-
-    var golRule1 = window.document.getElementById('k1');
-    var golRule2 = window.document.getElementById('k2');
-    var golRule3 = window.document.getElementById('k3');
-    drawGrid(golRule1, getGOLRule1());
-    drawGrid(golRule2, getGOLRule2());
-    drawGrid(golRule3, getGOLRule3());
-
     var p11 = window.document.getElementById('p11');
     var p12 = window.document.getElementById('p12');
     var p13 = window.document.getElementById('p13');

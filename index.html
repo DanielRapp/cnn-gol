@@ -77,36 +77,16 @@
         <canvas id="kernel-pre"></canvas><span class="symbol">$\xrightarrow{\text{B}}$</span><canvas id="kernel-post"></canvas>
       </p>
       <p>
-        Now notice the connection between an updating rule
+        There is a direct connection between an updating rule
         in game of life, and a convolutional filter.
-        Don't see it?
-        Well, think about it like this; each <i>rule</i>
-        can be represented by the set of neighbourhood
-        combinations that are satisfied by it.
-        So, for instance, the
-        neighbourhoods which satisfy the rule above
-        are $K_1=$<canvas id="k1" class="gol-rule"></canvas>, $K_2=$<canvas id="k2" class="gol-rule"></canvas>, $K_3=$<canvas id="k3" class="gol-rule"></canvas>, $\cdots$.
-        The grid of cells activated by this rule
-        could now be expressed as
-        $$G_1(A)=\mathbb{1}_{\ge 1}(A*K_1+\cdots+A*K_n)$$where $A*K$ denotes
-        the convolutional filtering of $A$ with $K$, and $\mathbb{1}_{\ge 1}(x)$ spits out $1$ if $x \ge 1$, and $0$ otherwise.
-      </p>
-      <p>
-        Finally we could also express the rest of the rules,
-        and their combination, in a similar style,
-        to get a full formula of an iteration of game of life, purely as a function of convolutional
-        filters. I won't dwell on the precise expression[1] though.
-        Instead we'll just use this fact as <i>inspiration</i>
+        I won't dwell on the precise expression[1],
+        instead we'll just use this fact as <i>inspiration</i>
         for the architecture of the neural network that follows,
         and trust (hope) that the network will be able to find it for us.
       <p>
-      [1] You can read more about this <a href="http://danielrapp.github.io/morph/">here</a>. Think of <i>erosion</i> as just a thresholded convolution.
+      [1] You can read more about this <a href="http://danielrapp.github.io/morph/">here</a>. Think of <i>dialation</i> as just a thresholded convolution.
       </p>
       <h2>Building the jewel</h2>
-      <p>
-        We've see that game of life can be expressed
-        as a function of a bunch of convolutional filters.
-      </p>
       <p>
         Thinking of game of life as a biological
         process, how could we now go about building its jewel?
@@ -115,8 +95,7 @@
         its behaviour?
       </p>
       <p>
-        The architecture is simple, and is directly inspired
-        by the above discussion.
+        The architecture is simple.
         The input is a grid with black and white pixels,
         and the output should be the next iteration
         according to the rules of game of life.
@@ -128,7 +107,7 @@
         I chose a two-layered approach.
         The first layer is a convolutional layer, hooking each
         $3\times 3$ neighbourhood to a set of filters
-        (arbitrarily fixed to 20) with a rectified linear activation function[2].
+        (arbitrarily fixed to 20) followed by a rectified linear unit[2].
         The idea being that this layer should <i>learn
         the rules</i> for game of life. And it should encode
         those rules in the weights of the filters.
