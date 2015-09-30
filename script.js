@@ -67,17 +67,8 @@
     return res;
   };
 
-  var downloadJSON = function(url, callback) {
-    var request = new XMLHttpRequest();
-    request.open('GET', url);
-    request.send();
-    request.onload = function() {
-      callback(JSON.parse(this.response));
-    };
-  };
-
   var getNetFromJSON = function(url, callback) {
-    downloadJSON(url, function(res) {
+    $.getJSON(url, function(res) {
       var net = new convnetjs.Net();
       net.fromJSON(res);
       callback(net);
